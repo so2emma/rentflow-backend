@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rentflow-postgres
+    environment:
+      POSTGRES_DB: rentflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - rentflow-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  rentflow-postgres-data:
