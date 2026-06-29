@@ -28,3 +28,12 @@ application:
       secret-key: ${JWT_SECRET_KEY:}
       # 1 day expiration in ms (24 hours * 60 mins * 60 secs * 1000 ms)
       expiration: 86400000
+
+nomba:
+  api:
+    url: ${NOMBA_API_URL:https://sandbox-api.nomba.com}
+  client:
+    id: ${NOMBA_CLIENT_ID:placeholder-id}
+    secret: ${NOMBA_CLIENT_SECRET:placeholder-secret}
+    account-id: ${NOMBA_ACCOUNT_ID:placeholder-account-id}
+
