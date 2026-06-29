@@ -23,7 +23,7 @@ public class LeaseRequest {
 
     private BigDecimal lateFeePercentage = new BigDecimal("5.00");
 
-    @NotBlank(message = "Nomba virtual account reference is required")
+//    @NotBlank(message = "Nomba virtual account reference is required")
     private String nombaVactRef;
 
     public LeaseRequest() {}

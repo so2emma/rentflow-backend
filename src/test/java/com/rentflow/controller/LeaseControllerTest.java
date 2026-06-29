@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -49,6 +50,9 @@ public class LeaseControllerTest {
 
     @Autowired
     private UnitRepository unitRepository;
+
+    @Autowired
+    private LeaseRepository leaseRepository;
 
     @Autowired
     private JwtService jwtService;
@@ -143,8 +147,10 @@ public class LeaseControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
-                .andExpect(jsonPath("$.nombaVactRef").value("NOMBA-VACT-REF-TEST-123"))
-                .andExpect(jsonPath("$.status").value("PENDING_VIRTUAL_ACCOUNT"));
+                .andExpect(jsonPath("$.nombaVactRef", org.hamcrest.Matchers.startsWith("RF_LSE_")))
+                .andExpect(jsonPath("$.nombaVactNumber", notNullValue()))
+                .andExpect(jsonPath("$.nombaVactBank", notNullValue()))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
     @Test
@@ -164,5 +170,41 @@ public class LeaseControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetActiveLeaseSuccess() throws Exception {
+        // Create an active lease for the tenant first
+        Lease lease = new Lease();
+        lease.setTenant(tenantProfile);
+        lease.setUnit(unitProfile);
+        lease.setStartDate(LocalDate.now());
+        lease.setEndDate(LocalDate.now().plusYears(1));
+        lease.setNombaVactRef("RF_LSE_ACTIVE_REF_123");
+        lease.setNombaVactNumber("9912345678");
+        lease.setNombaVactBank("Nomba/Wema Bank");
+        lease.setStatus(LeaseStatus.ACTIVE);
+        leaseRepository.save(lease);
+
+        String token = jwtService.generateToken(tenantUser);
+
+        mockMvc.perform(get("/api/v1/leases/active")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", notNullValue()))
+                .andExpect(jsonPath("$.nombaVactNumber").value("9912345678"))
+                .andExpect(jsonPath("$.nombaVactBank").value("Nomba/Wema Bank"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.baseRent").value(100000.00))
+                .andExpect(jsonPath("$.unitNumber").value("Unit 900"));
+    }
+
+    @Test
+    void testGetActiveLeaseNotFound() throws Exception {
+        String token = jwtService.generateToken(tenantUser);
+
+        mockMvc.perform(get("/api/v1/leases/active")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
     }
 }
