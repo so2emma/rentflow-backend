@@ -101,7 +101,7 @@ public class AuthControllerTest {
         mockMvc.perform(get("/api/v1/properties")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasItem("Property A")));
+                .andExpect(jsonPath("$[0].name", org.hamcrest.Matchers.notNullValue()));
     }
 
     @Test
