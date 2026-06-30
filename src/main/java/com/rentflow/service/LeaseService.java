@@ -4,6 +4,7 @@ import com.rentflow.dto.nomba.VActData;
 import com.rentflow.dto.nomba.VirtualAccountRequest;
 import com.rentflow.model.*;
 import com.rentflow.repository.LeaseRepository;
+import com.rentflow.repository.LedgerEntryRepository;
 import com.rentflow.repository.TenantRepository;
 import com.rentflow.repository.UnitRepository;
 import com.rentflow.service.nomba.NombaClient;
@@ -23,17 +24,20 @@ public class LeaseService {
     private final TenantRepository tenantRepository;
     private final UnitRepository unitRepository;
     private final NombaClient nombaClient;
+    private final LedgerEntryRepository ledgerEntryRepository;
 
     public LeaseService(
             LeaseRepository leaseRepository,
             TenantRepository tenantRepository,
             UnitRepository unitRepository,
-            NombaClient nombaClient
+            NombaClient nombaClient,
+            LedgerEntryRepository ledgerEntryRepository
     ) {
         this.leaseRepository = leaseRepository;
         this.tenantRepository = tenantRepository;
         this.unitRepository = unitRepository;
         this.nombaClient = nombaClient;
+        this.ledgerEntryRepository = ledgerEntryRepository;
     }
 
     public Lease createLease(UUID tenantId, UUID unitId, LocalDate start, LocalDate end, Integer gracePeriodDays, BigDecimal lateFeePercentage) {
@@ -72,6 +76,27 @@ public class LeaseService {
         unit.setStatus(UnitStatus.OCCUPIED);
         unitRepository.save(unit);
 
-        return leaseRepository.save(lease);
+        Lease savedLease = leaseRepository.save(lease);
+
+        // Auto-generate outstanding invoices upon lease activation
+        // 1. Water Utility
+        LedgerEntry waterUtility = new LedgerEntry();
+        waterUtility.setLease(savedLease);
+        waterUtility.setEntryType("UTILITY_WATER");
+        waterUtility.setAmountDue(new BigDecimal("10000.00"));
+        waterUtility.setDueDate(start);
+        waterUtility.setStatus("UNPAID");
+        ledgerEntryRepository.save(waterUtility);
+
+        // 2. Rent
+        LedgerEntry rent = new LedgerEntry();
+        rent.setLease(savedLease);
+        rent.setEntryType("RENT");
+        rent.setAmountDue(unit.getBaseRent());
+        rent.setDueDate(start);
+        rent.setStatus("UNPAID");
+        ledgerEntryRepository.save(rent);
+
+        return savedLease;
     }
 }
