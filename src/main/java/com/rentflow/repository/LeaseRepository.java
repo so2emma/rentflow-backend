@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface LeaseRepository extends JpaRepository<Lease, UUID> {
     Optional<Lease> findByTenantAndStatus(Tenant tenant, LeaseStatus status);
+    Optional<Lease> findByNombaVactRef(String nombaVactRef);
 }
