@@ -36,4 +36,6 @@ nomba:
     id: ${NOMBA_CLIENT_ID:placeholder-id}
     secret: ${NOMBA_CLIENT_SECRET:placeholder-secret}
     account-id: ${NOMBA_ACCOUNT_ID:placeholder-account-id}
+  webhook:
+    secret: ${NOMBA_WEBHOOK_SECRET:rentflow_webhook_secret_key}
 
