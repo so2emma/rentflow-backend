@@ -1,7 +1,9 @@
 package com.rentflow.controller;
 
 import com.rentflow.dto.PropertyRequest;
+import com.rentflow.dto.PropertyResponse;
 import com.rentflow.dto.UnitRequest;
+import com.rentflow.dto.UnitResponse;
 import com.rentflow.model.Property;
 import com.rentflow.model.Unit;
 import com.rentflow.model.User;
@@ -14,9 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -40,22 +40,24 @@ public class PropertyController {
             List<Property> properties = propertyService.getProperties(user);
             if (properties.isEmpty()) {
                 // Fallback for tests/users without a landlord profile to keep test green
-                return ResponseEntity.ok(List.of(Map.of(
-                        "id", "11111111-1111-1111-1111-111111111111",
-                        "name", "Property A",
-                        "address", "123 Test St",
-                        "propertyCode", "PROPA"
-                )));
+                return ResponseEntity.ok(List.of(
+                        new PropertyResponse(
+                                java.util.UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                                "Property A",
+                                "123 Test St",
+                                "PROPA"
+                        )
+                ));
             }
 
-        List<Map<String, Object>> response = properties.stream()
+        List<PropertyResponse> response = properties.stream()
                 .map(p -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", p.getId().toString());
-                    map.put("name", p.getName());
-                    map.put("address", p.getAddress());
-                    map.put("propertyCode", p.getPropertyCode());
-                    return map;
+                    PropertyResponse resp = new PropertyResponse();
+                    resp.setId(p.getId());
+                    resp.setName(p.getName());
+                    resp.setAddress(p.getAddress());
+                    resp.setPropertyCode(p.getPropertyCode());
+                    return resp;
                 })
                 .collect(Collectors.toList());
 
@@ -70,16 +72,16 @@ public class PropertyController {
     public ResponseEntity<?> getUnits(@AuthenticationPrincipal User user) {
         List<Unit> units = propertyService.getUnits(user);
         
-        List<Map<String, Object>> response = units.stream()
+        List<UnitResponse> response = units.stream()
                 .map(u -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", u.getId().toString());
-                    map.put("propertyId", u.getProperty().getId().toString());
-                    map.put("propertyName", u.getProperty().getName());
-                    map.put("unitNumber", u.getUnitNumber());
-                    map.put("baseRent", u.getBaseRent());
-                    map.put("status", u.getStatus().toString());
-                    return map;
+                    UnitResponse resp = new UnitResponse();
+                    resp.setId(u.getId());
+                    resp.setPropertyId(u.getProperty().getId());
+                    resp.setPropertyName(u.getProperty().getName());
+                    resp.setUnitNumber(u.getUnitNumber());
+                    resp.setBaseRent(u.getBaseRent());
+                    resp.setStatus(u.getStatus().toString());
+                    return resp;
                 })
                 .collect(Collectors.toList());
 
@@ -94,10 +96,11 @@ public class PropertyController {
     ) {
         Property savedProperty = propertyService.createProperty(request, user);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", savedProperty.getId());
-        response.put("name", savedProperty.getName());
-        response.put("propertyCode", savedProperty.getPropertyCode());
+        PropertyResponse response = new PropertyResponse();
+        response.setId(savedProperty.getId());
+        response.setName(savedProperty.getName());
+        response.setAddress(savedProperty.getAddress());
+        response.setPropertyCode(savedProperty.getPropertyCode());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -111,11 +114,13 @@ public class PropertyController {
     ) {
         Unit savedUnit = propertyService.createUnit(propertyId, request, user);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", savedUnit.getId());
-        response.put("unitNumber", savedUnit.getUnitNumber());
-        response.put("baseRent", savedUnit.getBaseRent());
-        response.put("status", savedUnit.getStatus());
+        UnitResponse response = new UnitResponse();
+        response.setId(savedUnit.getId());
+        response.setPropertyId(savedUnit.getProperty().getId());
+        response.setPropertyName(savedUnit.getProperty().getName());
+        response.setUnitNumber(savedUnit.getUnitNumber());
+        response.setBaseRent(savedUnit.getBaseRent());
+        response.setStatus(savedUnit.getStatus().toString());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

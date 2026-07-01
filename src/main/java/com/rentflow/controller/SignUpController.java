@@ -1,6 +1,7 @@
 package com.rentflow.controller;
 
 import com.rentflow.dto.SignUpRequest;
+import com.rentflow.dto.SignUpResponse;
 import com.rentflow.model.User;
 import com.rentflow.service.OnboardingService;
 import jakarta.validation.Valid;
@@ -24,10 +25,11 @@ public class SignUpController {
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@Valid @RequestBody SignUpRequest request) {
         User user = onboardingService.registerUser(request);
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "User registered successfully");
-        response.put("email", user.getEmail());
-        response.put("id", user.getId());
+        SignUpResponse response = new SignUpResponse(
+                "User registered successfully",
+                user.getEmail(),
+                user.getId()
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

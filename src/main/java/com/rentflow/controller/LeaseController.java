@@ -1,6 +1,7 @@
 package com.rentflow.controller;
 
 import com.rentflow.dto.LeaseRequest;
+import com.rentflow.dto.LeaseResponse;
 import com.rentflow.model.Lease;
 import com.rentflow.model.User;
 
@@ -32,22 +33,22 @@ public class LeaseController {
     public ResponseEntity<?> getLeases(@AuthenticationPrincipal User user) {
         List<Lease> landlordLeases = leaseService.getLeasesForLandlord(user);
 
-        List<Map<String, Object>> response = landlordLeases.stream()
+        List<LeaseResponse> response = landlordLeases.stream()
                 .map(l -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", l.getId().toString());
-                    map.put("tenantId", l.getTenant().getId().toString());
-                    map.put("tenantName", l.getTenant().getFirstName() + " " + l.getTenant().getLastName());
-                    map.put("unitId", l.getUnit().getId().toString());
-                    map.put("unitNumber", l.getUnit().getUnitNumber());
-                    map.put("propertyName", l.getUnit().getProperty().getName());
-                    map.put("startDate", l.getStartDate().toString());
-                    map.put("endDate", l.getEndDate().toString());
-                    map.put("gracePeriodDays", l.getGracePeriodDays());
-                    map.put("status", l.getStatus().toString());
-                    map.put("nombaVactNumber", l.getNombaVactNumber());
-                    map.put("nombaVactBank", l.getNombaVactBank());
-                    return map;
+                    LeaseResponse resp = new LeaseResponse();
+                    resp.setId(l.getId());
+                    resp.setTenantId(l.getTenant().getId());
+                    resp.setTenantName(l.getTenant().getFirstName() + " " + l.getTenant().getLastName());
+                    resp.setUnitId(l.getUnit().getId());
+                    resp.setUnitNumber(l.getUnit().getUnitNumber());
+                    resp.setPropertyName(l.getUnit().getProperty().getName());
+                    resp.setStartDate(l.getStartDate());
+                    resp.setEndDate(l.getEndDate());
+                    resp.setGracePeriodDays(l.getGracePeriodDays());
+                    resp.setStatus(l.getStatus().toString());
+                    resp.setNombaVactNumber(l.getNombaVactNumber());
+                    resp.setNombaVactBank(l.getNombaVactBank());
+                    return resp;
                 })
                 .collect(Collectors.toList());
 
@@ -67,16 +68,16 @@ public class LeaseController {
                     request.getLateFeePercentage()
             );
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", savedLease.getId());
-            response.put("tenantId", savedLease.getTenant().getId());
-            response.put("unitId", savedLease.getUnit().getId());
-            response.put("startDate", savedLease.getStartDate());
-            response.put("endDate", savedLease.getEndDate());
-            response.put("nombaVactRef", savedLease.getNombaVactRef());
-            response.put("nombaVactNumber", savedLease.getNombaVactNumber());
-            response.put("nombaVactBank", savedLease.getNombaVactBank());
-            response.put("status", savedLease.getStatus());
+            LeaseResponse response = new LeaseResponse();
+            response.setId(savedLease.getId());
+            response.setTenantId(savedLease.getTenant().getId());
+            response.setUnitId(savedLease.getUnit().getId());
+            response.setStartDate(savedLease.getStartDate());
+            response.setEndDate(savedLease.getEndDate());
+            response.setNombaVactRef(savedLease.getNombaVactRef());
+            response.setNombaVactNumber(savedLease.getNombaVactNumber());
+            response.setNombaVactBank(savedLease.getNombaVactBank());
+            response.setStatus(savedLease.getStatus().toString());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (jakarta.persistence.EntityNotFoundException e) {
@@ -91,19 +92,19 @@ public class LeaseController {
     public ResponseEntity<?> getActiveLease(@AuthenticationPrincipal User user) {
         Lease activeLease = leaseService.getActiveLeaseForTenant(user);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", activeLease.getId());
-        response.put("tenantId", activeLease.getTenant().getId());
-        response.put("unitId", activeLease.getUnit().getId());
-        response.put("startDate", activeLease.getStartDate());
-        response.put("endDate", activeLease.getEndDate());
-        response.put("nombaVactRef", activeLease.getNombaVactRef());
-        response.put("nombaVactNumber", activeLease.getNombaVactNumber());
-        response.put("nombaVactBank", activeLease.getNombaVactBank());
-        response.put("status", activeLease.getStatus());
-        response.put("baseRent", activeLease.getUnit().getBaseRent());
-        response.put("unitNumber", activeLease.getUnit().getUnitNumber());
-        response.put("depositWalletBalance", activeLease.getDepositWalletBalance());
+        LeaseResponse response = new LeaseResponse();
+        response.setId(activeLease.getId());
+        response.setTenantId(activeLease.getTenant().getId());
+        response.setUnitId(activeLease.getUnit().getId());
+        response.setStartDate(activeLease.getStartDate());
+        response.setEndDate(activeLease.getEndDate());
+        response.setNombaVactRef(activeLease.getNombaVactRef());
+        response.setNombaVactNumber(activeLease.getNombaVactNumber());
+        response.setNombaVactBank(activeLease.getNombaVactBank());
+        response.setStatus(activeLease.getStatus().toString());
+        response.setBaseRent(activeLease.getUnit().getBaseRent());
+        response.setUnitNumber(activeLease.getUnit().getUnitNumber());
+        response.setDepositWalletBalance(activeLease.getDepositWalletBalance());
 
         return ResponseEntity.ok(response);
     }

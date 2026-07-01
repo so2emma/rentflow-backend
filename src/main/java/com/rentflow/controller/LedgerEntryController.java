@@ -1,5 +1,6 @@
 package com.rentflow.controller;
 
+import com.rentflow.dto.LedgerEntryResponse;
 import com.rentflow.model.LedgerEntry;
 import com.rentflow.model.User;
 import org.springframework.http.ResponseEntity;
@@ -9,9 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
+
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -29,16 +29,16 @@ public class LedgerEntryController {
     public ResponseEntity<?> getActiveLeaseLedgers(@AuthenticationPrincipal User user) {
         List<LedgerEntry> entries = ledgerEntryService.getActiveLeaseLedgers(user);
 
-        List<Map<String, Object>> response = entries.stream()
+        List<LedgerEntryResponse> response = entries.stream()
                 .map(le -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", le.getId().toString());
-                    map.put("dueDate", le.getDueDate().toString());
-                    map.put("entryType", le.getEntryType());
-                    map.put("amountDue", le.getAmountDue());
-                    map.put("amountPaid", le.getAmountPaid());
-                    map.put("status", le.getStatus());
-                    return map;
+                    LedgerEntryResponse resp = new LedgerEntryResponse();
+                    resp.setId(le.getId());
+                    resp.setDueDate(le.getDueDate());
+                    resp.setEntryType(le.getEntryType());
+                    resp.setAmountDue(le.getAmountDue());
+                    resp.setAmountPaid(le.getAmountPaid());
+                    resp.setStatus(le.getStatus());
+                    return resp;
                 })
                 .collect(Collectors.toList());
 
