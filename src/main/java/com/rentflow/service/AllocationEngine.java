@@ -8,6 +8,7 @@ import com.rentflow.repository.LeaseRepository;
 import com.rentflow.repository.LedgerEntryRepository;
 import com.rentflow.repository.PaymentAllocationRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -18,6 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class AllocationEngine {
 
@@ -40,6 +42,8 @@ public class AllocationEngine {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void allocatePayment(UUID inboundTransactionId, BigDecimal totalAmount, Lease leaseRef) {
+        log.info("Starting payment allocation txId={} amount={} leaseId={}", inboundTransactionId, totalAmount, leaseRef.getId());
+        
         // 1. Lock Lease & retrieve details
         Lease lease = leaseRepository.findByIdForUpdate(leaseRef.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Lease not found"));
@@ -89,8 +93,11 @@ public class AllocationEngine {
         // 5. Fire Payout splits for Rent and Late Fees
         BigDecimal splitTotal = calculateSplitBase(inboundTransactionId);
         if (splitTotal.compareTo(BigDecimal.ZERO) > 0) {
+            log.info("Publishing PayoutSplitRequiredEvent txId={} splitTotal={}", inboundTransactionId, splitTotal);
             eventPublisher.publishEvent(new PayoutSplitRequiredEvent(this, inboundTransactionId, splitTotal));
         }
+
+        log.info("Completed payment allocation txId={} remainingFunds={}", inboundTransactionId, remainingFunds);
     }
 
     private int getPriority(String entryType) {
@@ -101,6 +108,7 @@ public class AllocationEngine {
     }
 
     private void logAllocation(UUID txId, LedgerEntry entry, BigDecimal amount, boolean isRollover) {
+        log.info("Allocating funds txId={} entryId={} amount={} isRollover={}", txId, entry != null ? entry.getId() : "null", amount, isRollover);
         PaymentAllocation allocation = new PaymentAllocation();
         allocation.setInboundTransactionId(txId);
         allocation.setLedgerEntry(entry);

@@ -8,8 +8,11 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 public class NombaAuthService {
 
@@ -39,10 +42,14 @@ public class NombaAuthService {
 
     public synchronized String getValidToken() {
         if (isPlaceholderCredentials()) {
+            log.debug("Using placeholder Nomba credentials. Returning mock token.");
             return "mock-token";
         }
         if (cachedToken == null || LocalDateTime.now().isAfter(tokenExpiryTime.minusMinutes(5))) {
+            log.info("Nomba access token missing or expired. Refreshing token.");
             refreshToken();
+        } else {
+            log.debug("Using cached Nomba access token.");
         }
         return cachedToken;
     }
@@ -53,6 +60,7 @@ public class NombaAuthService {
     }
 
     private void refreshToken() {
+        log.info("Initiating request to fetch new Nomba access token.");
         TokenRequest request = new TokenRequest(clientId, clientSecret);
         TokenResponse response = restClient.post()
                 .uri("/v1/auth/token")
@@ -64,8 +72,11 @@ public class NombaAuthService {
         if (response != null && "00".equals(response.code())) {
             this.cachedToken = response.data().accessToken();
             this.tokenExpiryTime = LocalDateTime.now().plusSeconds(response.data().expiresIn());
+            log.info("Successfully fetched new Nomba access token. Expires in {} seconds.", response.data().expiresIn());
         } else {
-            throw new RuntimeException("Failed to fetch Nomba Access Token: " + (response != null ? response.description() : "Empty Response"));
+            String errorDesc = response != null ? response.description() : "Empty Response";
+            log.error("Failed to fetch Nomba Access Token: {}", errorDesc);
+            throw new RuntimeException("Failed to fetch Nomba Access Token: " + errorDesc);
         }
     }
 

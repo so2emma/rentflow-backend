@@ -10,8 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.ResourceAccessException;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Random;
 
+@Slf4j
 @Service
 public class NombaClient {
 
@@ -37,7 +40,10 @@ public class NombaClient {
     }
 
     public VActData createVirtualAccount(VirtualAccountRequest request) {
+        log.info("Requesting virtual account creation accountRef={} expectedAmount={}", request.accountRef(), request.expectedAmount());
+        
         if (nombaAuthService.isPlaceholderCredentials()) {
+            log.debug("Placeholder credentials detected, generating mock virtual account accountRef={}", request.accountRef());
             return generateMockVirtualAccount(request);
         }
 
@@ -54,13 +60,16 @@ public class NombaClient {
                     .body(VirtualAccountResponse.class);
 
             if (response != null && "00".equals(response.code())) {
+                log.info("Successfully created virtual account accountRef={} accountNumber={}", request.accountRef(), response.data().bankAccountNumber());
                 return response.data();
             } else {
                 String desc = response != null ? response.description() : "Empty Response";
+                log.error("Failed to create virtual account accountRef={} error={}", request.accountRef(), desc);
                 throw new RuntimeException("Nomba API Error: " + desc);
             }
         } catch (ResourceAccessException e) {
             // Catches network connection and timeout issues, falling back to mock virtual account
+            log.warn("Network error while creating Nomba virtual account accountRef={}, falling back to mock. error={}", request.accountRef(), e.getMessage());
             return generateMockVirtualAccount(request);
         }
     }
@@ -69,6 +78,7 @@ public class NombaClient {
         Random random = new Random();
         long randomPart = 10000000L + random.nextInt(90000000);
         String accountNumber = "99" + randomPart;
+        log.info("Mock virtual account generated accountRef={} accountNumber={}", request.accountRef(), accountNumber);
         return new VActData(accountNumber, "Nomba/Wema Bank", request.accountRef());
     }
 }

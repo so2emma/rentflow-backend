@@ -6,12 +6,14 @@ import com.rentflow.model.User;
 import com.rentflow.repository.LandlordRepository;
 import com.rentflow.repository.RoleRepository;
 import com.rentflow.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
+@Slf4j
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
 
@@ -51,7 +53,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             landlord.setActive(true);
 
             savedUser = userRepository.save(landlord);
-            System.out.println("Default landlord user seeded: " + landlordEmail);
+            log.info("Default landlord user seeded: {}", landlordEmail);
         } else {
             savedUser = userRepository.findByEmail(landlordEmail).get();
         }
@@ -67,7 +69,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             landlordProfile.setBankAccountNumber("0123456789");
             landlordProfile.setBankAccountName("Default Landlord Trust");
             landlordRepository.save(landlordProfile);
-            System.out.println("Default landlord profile seeded for: " + landlordEmail);
+            log.info("Default landlord profile seeded for: {}", landlordEmail);
         }
     }
 }

@@ -8,9 +8,11 @@ import com.rentflow.repository.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
 
+@Slf4j
 @Service
 public class OnboardingService {
 
@@ -36,7 +38,10 @@ public class OnboardingService {
 
     @Transactional
     public User registerUser(SignUpRequest request) {
+        log.info("Starting user registration email={} role={}", request.getEmail(), request.getRole());
+        
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            log.warn("Registration failed: Email already exists email={}", request.getEmail());
             throw new DuplicateEmailException("Email " + request.getEmail() + " is already registered");
         }
 
@@ -90,8 +95,10 @@ public class OnboardingService {
             tenant.setPhoneNumber(request.getPhoneNumber());
             tenant.setBvn(request.getTenantDetails().getBvn());
             tenantRepository.save(tenant);
+            log.info("Tenant profile created for user email={}", request.getEmail());
         }
 
+        log.info("User registered successfully email={} role={}", request.getEmail(), roleName);
         return savedUser;
     }
 }

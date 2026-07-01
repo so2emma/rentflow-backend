@@ -6,6 +6,7 @@ import com.rentflow.model.*;
 import com.rentflow.repository.*;
 import com.rentflow.service.nomba.NombaClient;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional
 public class LeaseService {
@@ -44,6 +46,8 @@ public class LeaseService {
     }
 
     public Lease createLease(UUID tenantId, UUID unitId, LocalDate start, LocalDate end, Integer gracePeriodDays, BigDecimal lateFeePercentage) {
+        log.info("Creating lease tenantId={} unitId={}", tenantId, unitId);
+        
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
         Unit unit = unitRepository.findById(unitId)
@@ -54,6 +58,7 @@ public class LeaseService {
         String accountName = "RentFlow / " + tenant.getFirstName() + " " + tenant.getLastName();
 
         // Call Nomba API
+        log.info("Creating virtual account via Nomba for leaseId={} tenantId={}", leaseId, tenantId);
         VActData vAct = nombaClient.createVirtualAccount(
                 new VirtualAccountRequest(accountRef, accountName, tenant.getBvn(), unit.getBaseRent())
         );
@@ -100,10 +105,12 @@ public class LeaseService {
         rent.setStatus("UNPAID");
         ledgerEntryRepository.save(rent);
 
+        log.info("Lease created successfully leaseId={} vActRef={}", savedLease.getId(), savedLease.getNombaVactRef());
         return savedLease;
     }
 
     public List<Lease> getLeasesForLandlord(User user) {
+        log.info("Fetching leases for landlord userId={}", user.getId());
         Landlord landlord = landlordRepository.findByUser(user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Landlord profile not found"));
 
@@ -113,6 +120,7 @@ public class LeaseService {
     }
 
     public Lease getActiveLeaseForTenant(User user) {
+        log.info("Fetching active lease for tenant userId={}", user.getId());
         Tenant tenant = tenantRepository.findByUser(user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tenant profile not found"));
 

@@ -9,6 +9,7 @@ import com.rentflow.model.User;
 import com.rentflow.repository.LandlordRepository;
 import com.rentflow.repository.PropertyRepository;
 import com.rentflow.repository.UnitRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional
 public class PropertyService {
@@ -37,6 +39,7 @@ public class PropertyService {
     }
 
     public List<Property> getProperties(User user) {
+        log.info("Fetching properties for landlord userId={}", user != null ? user.getId() : "null");
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -50,6 +53,7 @@ public class PropertyService {
     }
 
     public List<Unit> getUnits(User user) {
+        log.info("Fetching units for landlord userId={}", user.getId());
         Landlord landlord = landlordRepository.findByUser(user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Landlord profile not found"));
 
@@ -61,6 +65,7 @@ public class PropertyService {
     }
 
     public Property createProperty(PropertyRequest request, User user) {
+        log.info("Creating property name={} userId={}", request.getName(), user.getId());
         Landlord landlord = landlordRepository.findByUser(user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Landlord profile not found"));
 
@@ -70,10 +75,13 @@ public class PropertyService {
         property.setAddress(request.getAddress());
         property.setPropertyCode(request.getPropertyCode());
 
-        return propertyRepository.save(property);
+        Property savedProperty = propertyRepository.save(property);
+        log.info("Property created successfully propertyId={}", savedProperty.getId());
+        return savedProperty;
     }
 
     public Unit createUnit(UUID propertyId, UnitRequest request, User user) {
+        log.info("Creating unit propertyId={} unitNumber={} userId={}", propertyId, request.getUnitNumber(), user.getId());
         Landlord landlord = landlordRepository.findByUser(user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Landlord profile not found"));
 
@@ -91,6 +99,8 @@ public class PropertyService {
         unit.setBaseRent(request.getBaseRent());
         unit.setStatus(request.getStatus());
 
-        return unitRepository.save(unit);
+        Unit savedUnit = unitRepository.save(unit);
+        log.info("Unit created successfully unitId={} propertyId={}", savedUnit.getId(), propertyId);
+        return savedUnit;
     }
 }

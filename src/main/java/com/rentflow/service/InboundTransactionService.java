@@ -6,6 +6,7 @@ import com.rentflow.model.Lease;
 import com.rentflow.repository.InboundTransactionRepository;
 import com.rentflow.repository.LeaseRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 
+@Slf4j
 @Service
 public class InboundTransactionService {
 
@@ -32,8 +34,11 @@ public class InboundTransactionService {
 
     @Transactional
     public void ingestTransaction(String rawPayload, String nombaTxId) {
+        log.info("Ingesting inbound transaction nombaTxId={}", nombaTxId);
+        
         // 1. Deduplication check
         if (transactionRepository.existsByNombaTransactionId(nombaTxId)) {
+            log.info("Transaction already exists, skipping deduplication nombaTxId={}", nombaTxId);
             return; // Duplicate found, stop execution (Idempotent success)
         }
 
@@ -56,6 +61,8 @@ public class InboundTransactionService {
         transaction.setRawPayload(rawPayload);
 
         InboundTransaction savedTx = transactionRepository.save(transaction);
+        log.info("Transaction ingested successfully nombaTxId={} savedTxId={} leaseId={} amount={}", 
+                 nombaTxId, savedTx.getId(), lease.getId(), savedTx.getAmount());
 
         // Publish Spring Event for Asynchronous Processing
         eventPublisher.publishEvent(new PaymentReceivedEvent(this, savedTx.getId()));
