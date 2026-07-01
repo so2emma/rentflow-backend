@@ -1,7 +1,5 @@
 package com.rentflow.controller;
 
-import com.rentflow.model.Tenant;
-import com.rentflow.repository.TenantRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,16 +15,16 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/tenants")
 public class TenantController {
 
-    private final TenantRepository tenantRepository;
+    private final com.rentflow.service.TenantService tenantService;
 
-    public TenantController(TenantRepository tenantRepository) {
-        this.tenantRepository = tenantRepository;
+    public TenantController(com.rentflow.service.TenantService tenantService) {
+        this.tenantService = tenantService;
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ROLE_LANDLORD', 'ROLE_ADMIN')")
     public ResponseEntity<?> getAllTenants() {
-        List<Map<String, Object>> tenants = tenantRepository.findAll().stream()
+        List<Map<String, Object>> tenants = tenantService.getAllTenants().stream()
                 .map(t -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", t.getId().toString());
