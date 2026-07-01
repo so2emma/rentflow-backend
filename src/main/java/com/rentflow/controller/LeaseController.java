@@ -130,6 +130,7 @@ public class LeaseController {
         response.put("status", activeLease.getStatus());
         response.put("baseRent", activeLease.getUnit().getBaseRent());
         response.put("unitNumber", activeLease.getUnit().getUnitNumber());
+        response.put("depositWalletBalance", activeLease.getDepositWalletBalance());
 
         return ResponseEntity.ok(response);
     }
