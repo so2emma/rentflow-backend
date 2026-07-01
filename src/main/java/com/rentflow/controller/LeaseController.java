@@ -1,14 +1,9 @@
 package com.rentflow.controller;
 
 import com.rentflow.dto.LeaseRequest;
-import com.rentflow.model.Landlord;
 import com.rentflow.model.Lease;
-import com.rentflow.model.LeaseStatus;
-import com.rentflow.model.Tenant;
 import com.rentflow.model.User;
-import com.rentflow.repository.LandlordRepository;
-import com.rentflow.repository.LeaseRepository;
-import com.rentflow.repository.TenantRepository;
+
 import com.rentflow.service.LeaseService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -29,31 +23,14 @@ import java.util.stream.Collectors;
 public class LeaseController {
 
     private final LeaseService leaseService;
-    private final LeaseRepository leaseRepository;
-    private final TenantRepository tenantRepository;
-    private final LandlordRepository landlordRepository;
-
-    public LeaseController(
-            LeaseService leaseService,
-            LeaseRepository leaseRepository,
-            TenantRepository tenantRepository,
-            LandlordRepository landlordRepository
-    ) {
+    public LeaseController(LeaseService leaseService) {
         this.leaseService = leaseService;
-        this.leaseRepository = leaseRepository;
-        this.tenantRepository = tenantRepository;
-        this.landlordRepository = landlordRepository;
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_LANDLORD')")
     public ResponseEntity<?> getLeases(@AuthenticationPrincipal User user) {
-        Landlord landlord = landlordRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Landlord profile not found"));
-
-        List<Lease> landlordLeases = leaseRepository.findAll().stream()
-                .filter(l -> l.getUnit().getProperty().getLandlord().getId().equals(landlord.getId()))
-                .collect(Collectors.toList());
+        List<Lease> landlordLeases = leaseService.getLeasesForLandlord(user);
 
         List<Map<String, Object>> response = landlordLeases.stream()
                 .map(l -> {
@@ -112,11 +89,7 @@ public class LeaseController {
     @GetMapping("/active")
     @PreAuthorize("hasRole('ROLE_TENANT')")
     public ResponseEntity<?> getActiveLease(@AuthenticationPrincipal User user) {
-        Tenant tenant = tenantRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tenant profile not found"));
-
-        Lease activeLease = leaseRepository.findByTenantAndStatus(tenant, LeaseStatus.ACTIVE)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No active lease found for this tenant"));
+        Lease activeLease = leaseService.getActiveLeaseForTenant(user);
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", activeLease.getId());

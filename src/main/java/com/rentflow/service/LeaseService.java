@@ -3,17 +3,17 @@ package com.rentflow.service;
 import com.rentflow.dto.nomba.VActData;
 import com.rentflow.dto.nomba.VirtualAccountRequest;
 import com.rentflow.model.*;
-import com.rentflow.repository.LeaseRepository;
-import com.rentflow.repository.LedgerEntryRepository;
-import com.rentflow.repository.TenantRepository;
-import com.rentflow.repository.UnitRepository;
+import com.rentflow.repository.*;
 import com.rentflow.service.nomba.NombaClient;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -25,19 +25,22 @@ public class LeaseService {
     private final UnitRepository unitRepository;
     private final NombaClient nombaClient;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final LandlordRepository landlordRepository;
 
     public LeaseService(
             LeaseRepository leaseRepository,
             TenantRepository tenantRepository,
             UnitRepository unitRepository,
             NombaClient nombaClient,
-            LedgerEntryRepository ledgerEntryRepository
+            LedgerEntryRepository ledgerEntryRepository,
+            LandlordRepository landlordRepository
     ) {
         this.leaseRepository = leaseRepository;
         this.tenantRepository = tenantRepository;
         this.unitRepository = unitRepository;
         this.nombaClient = nombaClient;
         this.ledgerEntryRepository = ledgerEntryRepository;
+        this.landlordRepository = landlordRepository;
     }
 
     public Lease createLease(UUID tenantId, UUID unitId, LocalDate start, LocalDate end, Integer gracePeriodDays, BigDecimal lateFeePercentage) {
@@ -98,5 +101,22 @@ public class LeaseService {
         ledgerEntryRepository.save(rent);
 
         return savedLease;
+    }
+
+    public List<Lease> getLeasesForLandlord(User user) {
+        Landlord landlord = landlordRepository.findByUser(user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Landlord profile not found"));
+
+        return leaseRepository.findAll().stream()
+                .filter(l -> l.getUnit().getProperty().getLandlord().getId().equals(landlord.getId()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public Lease getActiveLeaseForTenant(User user) {
+        Tenant tenant = tenantRepository.findByUser(user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tenant profile not found"));
+
+        return leaseRepository.findByTenantAndStatus(tenant, LeaseStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No active lease found for this tenant"));
     }
 }
